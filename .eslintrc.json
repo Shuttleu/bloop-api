@@ -1,0 +1,22 @@
+{
+    "env": {
+        "commonjs": true,
+        "es2021": true,
+        "node": true
+    },
+    "extends": [
+      "eslint:recommended",
+      "prettier"
+    ],
+    "parserOptions": {
+      "ecmaVersion": "latest"
+    },
+    "plugins": ["react", "prettier"],
+    "rules": {
+    },
+    "settings": {
+      "react": {
+        "version": "detect"
+      }
+    }
+}

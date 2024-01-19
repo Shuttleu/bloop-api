@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
-    static associate(models) {
+    static associate() {
       // define association here
     }
   }
@@ -19,7 +19,8 @@ module.exports = (sequelize, DataTypes) => {
     name: DataTypes.STRING,
     desc: DataTypes.STRING,
     points: DataTypes.INTEGER,
-    uuid: DataTypes.UUID
+    uuid: DataTypes.UUID,
+    hidden: DataTypes.BOOLEAN
   }, {
     sequelize,
     modelName: 'Achievement',
