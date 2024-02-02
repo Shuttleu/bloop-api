@@ -5,15 +5,17 @@ const port = 80
 const db = require("./models");
 var cors = require('cors')
 
+const { Op } = require("sequelize");
+
 app.use(cors());
 
 app.get('/users', async (req, res) => {
-  const users = await db.User.findAll();
+  const users = await db.User.findAll({ where: { cardId: { [Op.not]: 0 } } });
   res.json(users);
 })
 
 app.get('/users/achievements', async (req, res) => {
-  const userAchievements = await db.User.findAll({ include: [db.Achievement] });
+  const userAchievements = await db.User.findAll({ where: { cardId: { [Op.not]: 0 } }, include: [db.Achievement] });
   res.json(userAchievements);
 })
 
