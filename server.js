@@ -13,7 +13,7 @@ app.get('/users', async (req, res) => {
 })
 
 app.get('/users/achievements', async (req, res) => {
-  const userAchievements = await db.User.findAll({include: [db.Achievement]});
+  const userAchievements = await db.User.findAll({ include: [db.Achievement] });
   res.json(userAchievements);
 })
 
@@ -23,8 +23,9 @@ app.get('/achievements', async (req, res) => {
 })
 
 app.get('/user/:id', async (req, res) => {
-  const user = await db.User.findByPk(req.params.id, {include: [db.Achievement]});
-  res.json(user);
+  const user = await db.User.findByPk(req.params.id, { include: [db.Achievement] });
+  const bloopCount = await user.countBloops();
+  res.json({ user: user, bloopCount: bloopCount });
 })
 
 app.listen(port, () => {
