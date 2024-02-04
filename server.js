@@ -14,6 +14,11 @@ app.get('/users', async (req, res) => {
   res.json(users);
 })
 
+app.get('/barks', async (req, res) => {
+  const { count, bloops } = await db.Bloop.findAndCountAll();
+  res.json(count);
+})
+
 app.get('/users/achievements', async (req, res) => {
   const userAchievements = await db.User.findAll({ where: { cardId: { [Op.not]: 0 } }, include: [db.Achievement] });
   res.json(userAchievements);
