@@ -54,7 +54,7 @@ app.get('/stats', async (req, res) => {
         daysBoxes[boxes[box].name][day - 1] = { dayCount: 0, hourCount: [] };
         let dayCount = 0;
         for (let hour = 0; hour <= 23; hour++) {
-          const hourCount = await db.Bloop.count({ where: { createdAt: { [Op.between]: [`2024-02-${day} ${hour}:00:00.0+00`, `2024-02-${day} ${hour}:59:59.999+00`], } } });
+          const hourCount = await boxes[box].countBloops({ where: { createdAt: { [Op.between]: [`2024-02-${day} ${hour}:00:00.0+00`, `2024-02-${day} ${hour}:59:59.999+00`], } } });
           dayCount += hourCount;
           daysBoxes[boxes[box].name][day - 1].hourCount.push(hourCount);
         }
