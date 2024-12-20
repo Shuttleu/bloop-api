@@ -1,35 +1,37 @@
 const express = require('express')
 const app = express()
-const port = 3000
+const port = 3001
 
 const db = require("./models");
 var cors = require('cors')
 
+var jwt = require('jsonwebtoken');
+
 const { Op } = require("sequelize");
 
 app.use(cors());
+app.use(express.json());
 
-app.get('/users', async (req, res) => {
-  const users = await db.User.findAll({ where: { cardId: { [Op.not]: 0 } } });
-  res.json(users);
+app.post('/auth', async (req, res) => {
+  console.log(req.body);
+  res.status(500).end();
+  //res.json({auth: jwt.sign({ user_id: 1 }, 'shhhhh')})
 })
 
-app.get('/barks', async (req, res) => {
+app.get('/barks', async (_req, res) => {
   const bloopCount = await db.Bloop.count();
   res.json(bloopCount);
 })
 
-app.get('/users/achievements', async (req, res) => {
-  const userAchievements = await db.User.findAll({ where: { cardId: { [Op.not]: 0 } }, include: [db.Achievement] });
-  res.json(userAchievements);
-})
-
-app.get('/achievements', async (req, res) => {
+app.get('/achievements', async (_req, res) => {
   const achievements = await db.Achievement.findAll();
-  res.json(achievements);
+  const achievementNumbers = achievements.map(async achievement => await achievement.countUsers());
+  Promise.allSettled(achievementNumbers).then( achievementNumbersSettled =>
+    res.json({achievements: achievements, obtained: achievementNumbersSettled.map(number => number.value)})
+  );
 })
 
-app.get('/stats', async (req, res) => {
+app.get('/stats', async (_req, res) => {
   let boxNumbers = [];
   let days = [];
   for (let day = 1; day <= 5; day++) {
@@ -77,10 +79,20 @@ app.get('/stats', async (req, res) => {
 }
 );
 
-app.get('/user/:id', async (req, res) => {
-  const user = await db.User.findByPk(req.params.id, { include: [db.Achievement] });
-  const bloopCount = await user.countBloops();
-  res.json({ user: user, bloopCount: bloopCount });
+app.get('/user', async (req, res) => {
+  let token = "";
+  try {
+    token = jwt.verify(req.get("Authorization").split(" ")[1], "shhhhh");
+  } catch {
+    res.status(401).send({error: "Unauthorized"});
+  }
+  try {
+    const user = await db.User.findByPk(token.user_id, { include: [{model: db.Achievement, through: {attributes: []}}] });
+    const bloopCount = await user.countBloops();
+    res.json({ user: user, bloopCount: bloopCount });
+  } catch {
+    res.status(500).end();
+  }
 })
 
 app.listen(port, () => {
