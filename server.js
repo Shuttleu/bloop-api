@@ -5,18 +5,14 @@ const port = 3001
 const db = require("./models");
 var cors = require('cors')
 
-var jwt = require('jsonwebtoken');
+const jose = require('jose')
+
+const JWKS = jose.createRemoteJWKSet(new URL(`${process.env.AUTH_BASE_URL}/connect/certs`))
 
 const { Op } = require("sequelize");
 
 app.use(cors());
 app.use(express.json());
-
-app.post('/auth', async (req, res) => {
-  console.log(req.body);
-  res.status(500).end();
-  //res.json({auth: jwt.sign({ user_id: 1 }, 'shhhhh')})
-})
 
 app.get('/barks', async (_req, res) => {
   const bloopCount = await db.Bloop.count();
@@ -80,19 +76,35 @@ app.get('/stats', async (_req, res) => {
 );
 
 app.get('/user', async (req, res) => {
-  let token = "";
+  let badges = [];
   try {
-    token = jwt.verify(req.get("Authorization").split(" ")[1], "shhhhh");
-  } catch {
+    const { payload } = await jose.jwtVerify(req.get("Authorization").split(" ")[1], JWKS, {
+      issuer: process.env.AUTH_BASE_URL,
+      audience: `${process.env.AUTH_BASE_URL}/connect/userinfo`,
+    })
+    badges = payload.badge_serial;
+  } catch(error) {
+    console.log(error);
     res.status(401).send({error: "Unauthorized"});
+    return;
   }
-  try {
-    const user = await db.User.findByPk(token.user_id, { include: [{model: db.Achievement, through: {attributes: []}}] });
+  const settled = badges.filter(badge => badge != "").map(async badge => {
+    const user = await db.User.findOne({where: { uid: badge.replaceAll(":", "") }, include: [{model: db.Achievement, through: {attributes: []}}] });
     const bloopCount = await user.countBloops();
-    res.json({ user: user, bloopCount: bloopCount });
-  } catch {
-    res.status(500).end();
-  }
+    return { user: user, bloopCount: bloopCount };
+  });
+  let sent = false;
+  await Promise.allSettled(settled).then(settledBadges => {
+    settledBadges.forEach(badge => {
+      if (badge.status == "fulfilled"){
+        sent = true;
+        res.json(badge.value);
+        return;
+      }
+    })
+  })
+  if (!sent)
+    res.status(500).send({error: "No user found"});
 })
 
 app.listen(port, () => {
